@@ -1,68 +1,42 @@
-import random
-import os
-from datetime import datetime, timedelta
-from config import forex_symbols
-from agent import RLAgent, train_agent
-from simulator import backtest, run_live
-from data_fetcher import get_data, fetch_sentiment
-from features import prepare_data, get_state
-import MetaTrader5 as mt5
-import torch
+import subprocess
+from runner import run_live_bot
+from reporting import export_html_report
+from utils import CONFIG, get_db_path
+from transfer_tool import load_dqn_weights
 
+def cli_menu():
+    print("\n=== Forex Trading Bot CLI ===")
+    print("1. Start Live Trading")
+    print("2. Start Simulated Trading")
+    print("3. Train DQN with Optimized Reward")
+    print("4. Optimize Reward Function")
+    print("5. Transfer DQN Weights to PPO")
+    print("6. Generate HTML Report")
+    print("7. Exit")
+    return input("Select an option: ").strip()
 
-def main():
-    symbol = random.choice(forex_symbols)
-    print(f"🎯 Wybrany symbol: {symbol}")
-    end = datetime.now() - timedelta(days=30)
-    start = end - timedelta(days=365 * 20)
-    base = start + timedelta(days=random.randint(0, (end - start).days - 1825))
-    df = get_data(symbol, base, base + timedelta(days=365))
-    sentiment = fetch_sentiment(symbol, base.strftime('%Y-%m-%d'), (base + timedelta(days=365)).strftime('%Y-%m-%d'))
-    df = prepare_data(df, sentiment, symbol)
-    sample_state = get_state(df.iloc[0])
-    agent = train_agent(df[:int(0.8 * len(df))], input_size=len(sample_state))
-    backtest(agent, df[int(0.8 * len(df)):])
-
-if __name__ == '__main__':
-    if not mt5.initialize():
-        print("Failed to initialize MetaTrader5")
-        exit(1)
-
-    try:
-        print("\n[MENU]")
-        print("1. Trening i Backtest")
-        print("2. Tryb LIVE")
-        print("3. Tylko Backtest")
-        choice = input("Wybierz (1/2/3): ").strip()
-
-        if choice == '1':
-            main()
-
-        elif choice == '2':
-            agent = RLAgent(input_size=9)
-            if os.path.exists("trained_agent.pth"):
-                agent.load_state_dict(torch.load("trained_agent.pth"))
-                run_live(agent, 'EURUSD', mt5)
+if __name__ == "__main__":
+    while True:
+        try:
+            choice = cli_menu()
+            if choice == '1':
+                CONFIG['simulate'] = False
+                run_live_bot("models/ppo_model.zip")
+            elif choice == '2':
+                CONFIG['simulate'] = True
+                run_live_bot("models/ppo_model.zip")
+            elif choice == '3':
+                subprocess.run(["python", "dqn_trainer.py"])
+            elif choice == '4':
+                subprocess.run(["python", "optimize_reward.py"])
+            elif choice == '5':
+                print("[Instrukcja] Użyj 'transfer_tool.py' z odpowiednią polityką PPO i DQN.")
+            elif choice == '6':
+                export_html_report(get_db_path())
+            elif choice == '7':
+                print("Goodbye!")
+                break
             else:
-                print("Brak wytrenowanego modelu. Najpierw uruchom trening.")
-
-        elif choice == '3':
-            agent = RLAgent(input_size=9)
-            if os.path.exists("trained_agent.pth"):
-                agent.load_state_dict(torch.load("trained_agent.pth"))
-                symbol = random.choice(forex_symbols)
-                print(f"🔍 Backtest na symbolu: {symbol}")
-                end = datetime.now() - timedelta(days=30)
-                start = end - timedelta(days=365 * 20)
-                base = start + timedelta(days=random.randint(0, (end - start).days - 1825))
-                df = get_data(symbol, base, base + timedelta(days=365))
-                sentiment = fetch_sentiment(symbol, base.strftime('%Y-%m-%d'), (base + timedelta(days=365)).strftime('%Y-%m-%d'))
-                df = prepare_data(df, sentiment, symbol)
-                backtest(agent, df[int(0.8 * len(df)):])
-            else:
-                print("Brak wytrenowanego modelu.")
-
-        else:
-            print("Nieprawidłowy wybór.")
-    finally:
-        mt5.shutdown()
+                print("Invalid choice.")
+        except Exception as e:
+            print(f"[Error] {e}")
