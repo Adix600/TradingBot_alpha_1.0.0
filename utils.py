@@ -1,20 +1,19 @@
+# utils.py
 import sqlite3
 import MetaTrader5 as mt5
 import pandas as pd
 from datetime import datetime
+import yaml
 
-CONFIG = {
-    'symbol': 'EURUSD',
-    'lookback_window': 50,
-    'features': ['Open', 'High', 'Low', 'Close', 'Volume', 'Sentiment'],
-    'initial_balance': 10000,
-    'commission': 0.0002,
-    'lstm_hidden': 64,
-    'timeframe': mt5.TIMEFRAME_M1,
-    'lot_size': 0.1,
-    'slippage': 5,
-    'simulate': True
-}
+def load_config(path='config.yaml'):
+    with open(path, 'r') as f:
+        cfg = yaml.safe_load(f)
+    # zamień timeframe string na stałą MT5
+    if isinstance(cfg.get('timeframe'), str):
+        cfg['timeframe'] = getattr(mt5, 'TIMEFRAME_' + cfg['timeframe'])
+    return cfg
+
+CONFIG = load_config()
 
 def get_db_path():
     return "simulated_trades.db" if CONFIG['simulate'] else "live_trades.db"
@@ -44,3 +43,12 @@ def fetch_live_mt5_data(symbol, bars=50):
     df.set_index('time', inplace=True)
     return df[['open', 'high', 'low', 'close', 'tick_volume']].rename(columns={
         'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close', 'tick_volume': 'Volume'})
+
+def fetch_spread(symbol):
+    """Zwraca bieżący spread (ask – bid) dla danego symbolu."""
+    if not mt5.initialize():
+        raise RuntimeError(f"[Błąd] Inicjalizacja MT5 nie powiodła się przy pobieraniu spreadu dla {symbol}")
+    tick = mt5.symbol_info_tick(symbol)
+    if tick is None:
+        raise RuntimeError(f"[Błąd] Nie udało się pobrać tików dla {symbol}")
+    return float(tick.ask - tick.bid)

@@ -1,3 +1,4 @@
+# runner.py
 import time
 import os
 import numpy as np
@@ -9,13 +10,20 @@ from sentiment import scrape_latest_news, analyze_sentiment
 from trading import simulate_trade, sim_state
 from reporting import export_html_report
 from stable_baselines3 import PPO
+from stable_baselines3.common.vec_env import DummyVecEnv
+import torch
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def run_live_bot(model_path):
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"[Błąd] Nie znaleziono modelu PPO: {model_path}")
 
     sentiment_pipe = pipeline("sentiment-analysis", model="yiyanghkust/finbert-tone")
-    model = PPO.load(model_path)
+    # jeśli chciałbyś wektorowe envy:
+    # env = DummyVecEnv([lambda: LiveTradingEnv()])
+    model = PPO.load(model_path, device=device)
+
     db_path = get_db_path()
     db_conn = init_db(db_path)
 
@@ -32,7 +40,7 @@ def run_live_bot(model_path):
 
             action, _ = model.predict(obs)
             price = df.iloc[-1]['Close']
-            action_name = ['Hold', 'Buy', 'Sell', 'Close Long', 'Close Short'][action]
+            action_name = ['Hold','Buy','Sell','Close Long','Close Short'][action]
             print(f"[{datetime.now()}] Action: {action_name}")
 
             if CONFIG['simulate']:
@@ -44,9 +52,13 @@ def run_live_bot(model_path):
                 model.learn(total_timesteps=1000, reset_num_timesteps=False)
                 model.save(model_path)
                 export_html_report(db_path)
-                print("[Info] Trening zakończony i zapisany. Raport zaktualizowany.")
+                print("[Info] Trening zakończone i zapisane. Raport zaktualizowany.")
 
             time.sleep(60)
         except Exception as e:
             print(f"[Błąd] {e}")
             time.sleep(60)
+
+if __name__ == "__main__":
+    # jeśli chcesz wywołać z main.py, usuń to wywołanie
+    run_live_bot("models/ppo_model.zip")
