@@ -5,7 +5,9 @@ from transformers import pipeline
 def load_finnbert_pipeline():
     return pipeline("sentiment-analysis", model="yiyanghkust/finbert-tone")
 
-def analyze_sentiment(texts, pipe):
+def analyze_sentiment(texts, pipe=None):
+    if pipe is None:
+        pipe = load_finnbert_pipeline()
     sentiment_map = {'positive': 1, 'negative': -1, 'neutral': 0}
     results = []
     for text in texts:

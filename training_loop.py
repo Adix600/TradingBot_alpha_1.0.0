@@ -1,6 +1,5 @@
-
 import pandas as pd
-from stable_baselines3 import PPO
+from sb3_contrib import RecurrentPPO
 from agent_policy import CustomLSTMPolicy
 from env_market import MarketEnv
 from mt5_data_loader import load_mt5_data
@@ -11,7 +10,7 @@ def train_until_stagnation(symbol='EURUSD', timeframe='M5', months=6,
     df = load_mt5_data(symbol=symbol, timeframe=timeframe, months=months)
     env = MarketEnv(df, window_size=CONFIG['lookback_window'], initial_balance=CONFIG['initial_balance'])
 
-    model = PPO(
+    model = RecurrentPPO(
         policy=CustomLSTMPolicy,
         env=env,
         verbose=1,

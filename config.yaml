@@ -1,0 +1,15 @@
+symbol: EURUSD
+lookback_window: 50
+features:
+  - Open
+  - High
+  - Low
+  - Close
+  - Volume
+  - Sentiment
+  - Trend
+initial_balance: 10000
+timeframe: M5
+simulate: true
+spread_fixed: 0.0001
+use_memory: true

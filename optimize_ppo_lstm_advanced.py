@@ -1,4 +1,3 @@
-
 import optuna
 from stable_baselines3 import PPO
 from agent_policy import CustomLSTMPolicy
@@ -7,13 +6,11 @@ from mt5_data_loader import load_mt5_data
 from utils import CONFIG
 
 def objective(trial):
-    # Optymalizowane hiperparametry wejściowe i modelowe
     lookback_window = trial.suggest_int("lookback_window", 30, 100)
     hidden_size = trial.suggest_categorical("hidden_size", [32, 64, 128, 256])
     dropout = trial.suggest_float("dropout", 0.0, 0.5)
     memory_weight = trial.suggest_float("memory_weight", 0.0, 1.0)
 
-    # Wczytanie danych MT5 z M5
     df = load_mt5_data(symbol="EURUSD", timeframe="M5", months=6)
 
     env = MarketEnv(df, window_size=lookback_window, initial_balance=CONFIG['initial_balance'])
@@ -40,11 +37,8 @@ def objective(trial):
     )
 
     model.learn(total_timesteps=20000)
-
     final_balance = env.balance if hasattr(env, 'balance') else CONFIG['initial_balance']
     reward_score = final_balance - CONFIG['initial_balance']
-
-    # Nagroda końcowa może uwzględniać wpływ pamięci
     return reward_score * (1 + memory_weight)
 
 if __name__ == "__main__":

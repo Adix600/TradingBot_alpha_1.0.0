@@ -2,19 +2,17 @@ import sqlite3
 import MetaTrader5 as mt5
 import pandas as pd
 from datetime import datetime
+import yaml
 
-CONFIG = {
-    'symbol': 'EURUSD',
-    'lookback_window': 50,
-    'features': ['Open', 'High', 'Low', 'Close', 'Volume', 'Sentiment'],
-    'initial_balance': 10000,
-    'commission': 0.0002,
-    'lstm_hidden': 64,
-    'timeframe': mt5.TIMEFRAME_M1,
-    'lot_size': 0.1,
-    'slippage': 5,
-    'simulate': True
-}
+def load_config(path='config.yaml'):
+    with open(path, 'r') as f:
+        cfg = yaml.safe_load(f)
+    if isinstance(cfg.get('timeframe'), str):
+        cfg['timeframe'] = getattr(mt5, 'TIMEFRAME_' + cfg['timeframe'])
+    return cfg
+
+CONFIG = load_config()
+CONFIG.setdefault("use_memory", True)
 
 def get_db_path():
     return "simulated_trades.db" if CONFIG['simulate'] else "live_trades.db"
@@ -33,14 +31,10 @@ def log_trade(conn, action, price, reward, balance):
                    (datetime.now().isoformat(), action, price, reward, balance))
     conn.commit()
 
-def fetch_live_mt5_data(symbol, bars=50):
+def fetch_spread(symbol):
     if not mt5.initialize():
-        raise RuntimeError("[Błąd] Inicjalizacja MT5 nie powiodła się")
-    rates = mt5.copy_rates_from_pos(symbol, CONFIG['timeframe'], 0, bars)
-    if rates is None or len(rates) == 0:
-        raise ValueError("[Błąd] Brak danych z MT5")
-    df = pd.DataFrame(rates)
-    df['time'] = pd.to_datetime(df['time'], unit='s')
-    df.set_index('time', inplace=True)
-    return df[['open', 'high', 'low', 'close', 'tick_volume']].rename(columns={
-        'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close', 'tick_volume': 'Volume'})
+        raise RuntimeError(f"[Błąd] MT5: brak połączenia z terminalem")
+    tick = mt5.symbol_info_tick(symbol)
+    if tick is None:
+        raise RuntimeError(f"[Błąd] Nie udało się pobrać danych tickowych dla {symbol}")
+    return float(tick.ask - tick.bid)
