@@ -1,9 +1,10 @@
 import optuna
-from stable_baselines3 import PPO
+from sb3_contrib import RecurrentPPO
 from agent_policy import CustomLSTMPolicy
 from env_market import MarketEnv
 from mt5_data_loader import load_mt5_data
 from utils import CONFIG
+import yaml
 
 def objective(trial):
     lookback_window = trial.suggest_int("lookback_window", 30, 100)
@@ -11,8 +12,7 @@ def objective(trial):
     dropout = trial.suggest_float("dropout", 0.0, 0.5)
     memory_weight = trial.suggest_float("memory_weight", 0.0, 1.0)
 
-    df = load_mt5_data(symbol="EURUSD", timeframe="M5", months=6)
-
+    df = load_mt5_data(symbol=CONFIG['symbol'], timeframe="M5", months=6)
     env = MarketEnv(df, window_size=lookback_window, initial_balance=CONFIG['initial_balance'])
 
     policy_kwargs = {
@@ -23,7 +23,7 @@ def objective(trial):
         }
     }
 
-    model = PPO(
+    model = RecurrentPPO(
         policy=CustomLSTMPolicy,
         env=env,
         learning_rate=trial.suggest_float("lr", 1e-5, 1e-3, log=True),
@@ -48,4 +48,13 @@ if __name__ == "__main__":
     print("Best trial:")
     print(study.best_trial)
 
-    study.trials_dataframe().to_csv("ppo_lstm_advanced_trials.csv")
+    # Zapis najlepszych parametrów do config.yaml
+    with open("config.yaml", "r") as f:
+        config = yaml.safe_load(f)
+
+    config.update(study.best_trial.params)
+
+    with open("config.yaml", "w") as f:
+        yaml.safe_dump(config, f)
+
+    print("[✓] Najlepsze parametry zapisane do config.yaml")

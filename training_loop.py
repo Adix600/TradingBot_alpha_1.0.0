@@ -5,18 +5,34 @@ from env_market import MarketEnv
 from mt5_data_loader import load_mt5_data
 from utils import CONFIG
 
-def train_until_stagnation(symbol='EURUSD', timeframe='M5', months=6,
+def train_until_stagnation(symbol=None, timeframe=None, months=6,
                            max_epochs=50, timesteps_per_epoch=5000, stagnation_limit=10):
+    symbol = symbol or CONFIG['symbol']
+    timeframe = timeframe or CONFIG['timeframe']
+    lookback_window = CONFIG['lookback_window']
+
     df = load_mt5_data(symbol=symbol, timeframe=timeframe, months=months)
-    env = MarketEnv(df, window_size=CONFIG['lookback_window'], initial_balance=CONFIG['initial_balance'])
+    env = MarketEnv(df, window_size=lookback_window, initial_balance=CONFIG['initial_balance'])
+
+    policy_kwargs = {
+        "features_extractor_kwargs": {
+            "features_dim": 128,
+            "hidden_size": CONFIG['hidden_size'],
+            "dropout": CONFIG['dropout']
+        }
+    }
 
     model = RecurrentPPO(
         policy=CustomLSTMPolicy,
         env=env,
+        learning_rate=CONFIG['lr'],
+        n_steps=CONFIG['n_steps'],
+        batch_size=CONFIG['batch_size'],
+        gamma=CONFIG['gamma'],
+        gae_lambda=CONFIG['gae_lambda'],
+        clip_range=CONFIG['clip_range'],
+        policy_kwargs=policy_kwargs,
         verbose=1,
-        n_steps=2048,
-        batch_size=64,
-        learning_rate=3e-4,
         tensorboard_log="./ppo_lstm_log/"
     )
 

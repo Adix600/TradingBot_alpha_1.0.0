@@ -13,3 +13,12 @@ timeframe: M5
 simulate: true
 spread_fixed: 0.0001
 use_memory: true
+hidden_size: 64
+dropout: 0.2
+lr: 0.0003
+n_steps: 2048
+batch_size: 64
+gamma: 0.99
+gae_lambda: 0.95
+clip_range: 0.2
+memory_weight: 0.5
