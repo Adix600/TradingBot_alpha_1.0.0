@@ -22,3 +22,9 @@ spread_fixed: 0.0001
 symbol: EURUSD
 timeframe: M5
 use_memory: true
+
+# nowy system nagród
+token_cost: 0.0001
+quick_exit_penalty: 0.005
+idle_penalty: 0.001
+unrealized_weight: 0.05
