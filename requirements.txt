@@ -1,0 +1,14 @@
+# === Requirements for Trading Bot PPO + LSTM ===
+gymnasium==0.29.1
+stable-baselines3==2.1.0
+optuna==3.4.0
+scikit-learn
+pandas
+matplotlib
+transformers
+torch
+tqdm
+MetaTrader5
+beautifulsoup4
+requests
+ruamel.yaml
