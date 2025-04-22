@@ -1,24 +1,24 @@
-symbol: EURUSD
-lookback_window: 50
+batch_size: 32
+clip_range: 0.13270930679906817
+dropout: 0.4346944319387426
 features:
-  - Open
-  - High
-  - Low
-  - Close
-  - Volume
-  - Sentiment
-  - Trend
+- Open
+- High
+- Low
+- Close
+- Volume
+- Sentiment
+- Trend
+gae_lambda: 0.8452410882710313
+gamma: 0.9142474460629625
+hidden_size: 32
 initial_balance: 10000
-timeframe: M5
+lookback_window: 47
+lr: 3.1768109204456396e-05
+memory_weight: 0.5778941697142417
+n_steps: 1024
 simulate: true
 spread_fixed: 0.0001
+symbol: EURUSD
+timeframe: M5
 use_memory: true
-hidden_size: 64
-dropout: 0.2
-lr: 0.0003
-n_steps: 2048
-batch_size: 64
-gamma: 0.99
-gae_lambda: 0.95
-clip_range: 0.2
-memory_weight: 0.5

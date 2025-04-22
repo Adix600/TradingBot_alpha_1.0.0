@@ -6,7 +6,10 @@ def load_mt5_data(symbol="EURUSD", timeframe="M5", months=12) -> pd.DataFrame:
     if not mt5.initialize():
         raise RuntimeError("[MT5] Inicjalizacja nie powiodła się")
 
-    tf = getattr(mt5, f"TIMEFRAME_{timeframe}")
+    if isinstance(timeframe, str):
+        tf = getattr(mt5, f"TIMEFRAME_{timeframe}")
+    else:
+        tf = timeframe
     end = datetime.now()
     start = end - timedelta(days=months * 30)
 
